@@ -1140,18 +1140,44 @@ function transferSamplesToTestTubes(petridish) {
             document.getElementById('instructionText').innerText =
                 `Successfully transferred samples to both test tubes!`;
 
-            // Move to next step
-            currentStep = 8;
-            updateInstructionText();
+            // SHOW BULK DENSITY RESULTS AFTER SAMPLE TRANSFER (Step 7 completion)
+            console.log('Sample transfer completed - showing bulk density results');
+            if (typeof window.showBulkDensityResults === 'function') {
+                // Add a small delay to let the user see the transfer completion message
+                setTimeout(() => {
+                    window.showBulkDensityResults();
 
-            // Play the starttapping9 audio for step 8
-            console.log('Playing starttapping9 audio for step 8');
-            const audio = document.getElementById('instructionAudio');
-            if (audio) {
-                audio.src = 'audio/starttapping9.mp3';
-                audio.play().catch(error => {
-                    console.error('Audio playback error:', error);
-                });
+                    // After showing bulk density results, move to step 8
+                    setTimeout(() => {
+                        currentStep = 8;
+                        updateInstructionText();
+
+                        // Play the starttapping9 audio for step 8
+                        console.log('Playing starttapping9 audio for step 8');
+                        const audio = document.getElementById('instructionAudio');
+                        if (audio) {
+                            audio.src = 'audio/starttapping9.mp3';
+                            audio.play().catch(error => {
+                                console.error('Audio playback error:', error);
+                            });
+                        }
+                    }, 3000); // Give user time to see bulk density results
+                }, 1500);
+            } else {
+                console.warn('showBulkDensityResults function not found');
+                // Fallback: move to step 8 immediately
+                currentStep = 8;
+                updateInstructionText();
+
+                // Play the starttapping9 audio for step 8
+                console.log('Playing starttapping9 audio for step 8');
+                const audio = document.getElementById('instructionAudio');
+                if (audio) {
+                    audio.src = 'audio/starttapping9.mp3';
+                    audio.play().catch(error => {
+                        console.error('Audio playback error:', error);
+                    });
+                }
             }
         });
     });

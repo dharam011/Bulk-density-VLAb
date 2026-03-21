@@ -25,11 +25,67 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// NEW FUNCTION: Show bulk density results after step 7 (sample transfer)
+window.showBulkDensityResults = function() {
+  console.log('showBulkDensityResults called - displaying bulk density after sample transfer');
+
+  // Get the selected values
+  const chemicalNameField = document.getElementById('chemicalName');
+  const sampleWeightField = document.getElementById('sampleWeight');
+  const tapCountField = document.getElementById('tapCount');
+
+  if (!chemicalNameField || !sampleWeightField || !tapCountField) {
+    console.error('Required fields not found');
+    return;
+  }
+
+  const chemicalName = chemicalNameField.value;
+  const sampleWeight = parseInt(sampleWeightField.value);
+  const tapCount = parseInt(tapCountField.value);
+
+  console.log('Selected values for bulk density:', { chemicalName, sampleWeight, tapCount });
+
+  // Check if the values are valid
+  if (!chemicalName || isNaN(sampleWeight) || isNaN(tapCount)) {
+    console.error('Invalid values:', { chemicalName, sampleWeight, tapCount });
+    return;
+  }
+
+  // Find the matching entry in the JSON data
+  if (rawJsonData) {
+    console.log('Searching for matching entry in JSON data for bulk density...');
+
+    // Find the exact match
+    const exactMatch = findExactMatch(chemicalName, sampleWeight, tapCount);
+
+    if (exactMatch) {
+      console.log('Found exact match for bulk density:', exactMatch);
+      // Update ONLY bulk density and bulk volume
+      updateBulkDensityOnly(exactMatch);
+    } else {
+      console.log('No exact match found, trying to find closest match...');
+
+      // Find the closest match
+      const closestMatch = findClosestMatch(chemicalName, sampleWeight, tapCount);
+
+      if (closestMatch) {
+        console.log('Found closest match for bulk density:', closestMatch);
+        // Update ONLY bulk density and bulk volume
+        updateBulkDensityOnly(closestMatch);
+      } else {
+        console.error('No match found in JSON data for bulk density');
+      }
+    }
+  } else {
+    console.error('JSON data not loaded yet');
+  }
+};
+
 // Override the showResults function in tapping.js
-// This will be called when the tapping is complete
+// This will be called when the tapping is complete - NOW ONLY SHOWS TAPPED DENSITY
 const originalShowResults = window.showResults;
 window.showResults = function() {
-  console.log('Overridden showResults called from json-results-handler.js');
+  console.log('Overridden showResults called from json-results-handler.js - showing ONLY tapped density');
 
   // Get the selected values
   const chemicalNameField = document.getElementById('chemicalName');
@@ -49,7 +105,7 @@ window.showResults = function() {
   const sampleWeight = parseInt(sampleWeightField.value);
   const tapCount = parseInt(tapCountField.value);
 
-  console.log('Selected values:', {
+  console.log('Selected values for tapped density:', {
     chemicalName,
     sampleWeight,
     tapCount,
@@ -72,7 +128,7 @@ window.showResults = function() {
 
   // Find the exact matching entry in the JSON data
   if (rawJsonData) {
-    console.log('Searching for matching entry in JSON data...');
+    console.log('Searching for matching entry in JSON data for tapped density...');
     console.log('Raw JSON data sample:', rawJsonData.slice(0, 2));
 
     // Find the exact match
@@ -81,8 +137,8 @@ window.showResults = function() {
     if (exactMatch) {
       console.log('Found exact match in JSON data:', exactMatch);
 
-      // Update the measurement panel with the exact values from the JSON
-      updateMeasurementPanel(exactMatch);
+      // Update ONLY tapped density and tapped volume
+      updateTappedDensityOnly(exactMatch);
     } else {
       console.log('No exact match found, trying to find closest match...');
 
@@ -92,8 +148,8 @@ window.showResults = function() {
       if (closestMatch) {
         console.log('Found closest match in JSON data:', closestMatch);
 
-        // Update the measurement panel with the values from the closest match
-        updateMeasurementPanel(closestMatch);
+        // Update ONLY tapped density and tapped volume
+        updateTappedDensityOnly(closestMatch);
       } else {
         console.error('No match found in JSON data');
 
@@ -262,7 +318,111 @@ function cleanupChemicalName(name) {
   return chemicalNameMap[cleanName] || cleanName;
 }
 
-// Function to update the measurement panel with values from the JSON
+// Function to update the measurement panel with ONLY bulk density values from the JSON
+function updateBulkDensityOnly(data) {
+  if (!data) {
+    console.error('No data provided to update bulk density');
+    return;
+  }
+
+  console.log('Updating ONLY bulk density with data:', JSON.stringify(data, null, 2));
+
+  // Get all keys from the data object
+  const keys = Object.keys(data);
+  console.log('Available keys in data:', keys);
+
+  // Find the keys for bulk density and bulk volume
+  const bulkDensityKey = keys.find(key => key.includes('Bulk') && key.includes('Density'));
+  const bulkVolumeKey = keys.find(key => key.includes('Bulk') && key.includes('Volume'));
+
+  console.log('Found keys for bulk density:', { bulkDensityKey, bulkVolumeKey });
+
+  // Update bulk density
+  const bulkDensityField = document.getElementById('bulkDensity');
+  if (bulkDensityField && bulkDensityKey) {
+    const bulkDensityValue = String(data[bulkDensityKey]);
+    bulkDensityField.value = bulkDensityValue + ' g/cm³';
+    console.log('Bulk density updated to:', bulkDensityField.value);
+  } else {
+    console.error('Could not update bulk density:', {
+      fieldExists: !!bulkDensityField,
+      keyExists: !!bulkDensityKey,
+      keyValue: bulkDensityKey ? data[bulkDensityKey] : 'N/A'
+    });
+  }
+
+  // Update bulk volume
+  const bulkVolumeField = document.getElementById('bulkVolume');
+  if (bulkVolumeField && bulkVolumeKey) {
+    const bulkVolumeValue = String(data[bulkVolumeKey]);
+    bulkVolumeField.value = bulkVolumeValue + ' cm³';
+    console.log('Bulk volume updated to:', bulkVolumeField.value);
+  } else {
+    console.error('Could not update bulk volume:', {
+      fieldExists: !!bulkVolumeField,
+      keyExists: !!bulkVolumeKey,
+      keyValue: bulkVolumeKey ? data[bulkVolumeKey] : 'N/A'
+    });
+  }
+
+  // Show a message in the instruction box
+  const dict = languageMap['en'];
+  document.getElementById('instructionText').innerText = dict.step7_5;
+}
+
+// Function to update the measurement panel with ONLY tapped density values from the JSON
+function updateTappedDensityOnly(data) {
+  if (!data) {
+    console.error('No data provided to update tapped density');
+    return;
+  }
+
+  console.log('Updating ONLY tapped density with data:', JSON.stringify(data, null, 2));
+
+  // Get all keys from the data object
+  const keys = Object.keys(data);
+  console.log('Available keys in data:', keys);
+
+  // Find the keys for tapped density and tapped volume
+  const tappedDensityKey = keys.find(key => key.includes('Tapped') && key.includes('Density'));
+  const tappedVolumeKey = keys.find(key => key.includes('Tapped') && key.includes('Volume'));
+
+  console.log('Found keys for tapped density:', { tappedDensityKey, tappedVolumeKey });
+
+  // Update tapped density
+  const tappedDensityField = document.getElementById('tappedDensity');
+  if (tappedDensityField && tappedDensityKey) {
+    const tappedDensityValue = String(data[tappedDensityKey]);
+    tappedDensityField.value = tappedDensityValue + ' g/cm³';
+    console.log('Tapped density updated to:', tappedDensityField.value);
+  } else {
+    console.error('Could not update tapped density:', {
+      fieldExists: !!tappedDensityField,
+      keyExists: !!tappedDensityKey,
+      keyValue: tappedDensityKey ? data[tappedDensityKey] : 'N/A'
+    });
+  }
+
+  // Update tapped volume
+  const tappedVolumeField = document.getElementById('tappedVolume');
+  if (tappedVolumeField && tappedVolumeKey) {
+    const tappedVolumeValue = String(data[tappedVolumeKey]);
+    tappedVolumeField.value = tappedVolumeValue + ' cm³';
+    console.log('Tapped volume updated to:', tappedVolumeField.value);
+  } else {
+    console.error('Could not update tapped volume:', {
+      fieldExists: !!tappedVolumeField,
+      keyExists: !!tappedVolumeKey,
+      keyValue: tappedVolumeKey ? data[tappedVolumeKey] : 'N/A'
+    });
+  }
+
+  // Show a success message in the instruction box
+  const dict = languageMap['en'];
+  document.getElementById('instructionText').innerText = dict.completed;
+}
+
+// Function to update the measurement panel with values from the JSON (LEGACY - for backward compatibility)
 function updateMeasurementPanel(data) {
   if (!data) {
     console.error('No data provided to update measurement panel');
@@ -355,7 +515,8 @@ function updateMeasurementPanel(data) {
   }
 
   // Show a success message in the instruction box
-  document.getElementById('instructionText').innerText = 'Simulation completed! Results are displayed in the measurement panel.';
+  const dict = languageMap['en'];
+  document.getElementById('instructionText').innerText = dict.completed;
 }
 
 // Function to find and display results

@@ -15,9 +15,10 @@ const languageMap = {
         step5: 'Click the powder box cap to open it.',
         step6: 'Click on the spatula to collect the sample.',
         step7: 'Click on the Petri dish to transfer the sample to the test tubes.',
+        step7_5: 'Bulk density measurement completed! Check the results below. Now proceed to tapped density measurement.',
         step8: 'Click the \'Start\' button to start tapping.',
-        step9: 'Tapping completed. Results are displayed below.',
-        completed: 'Simulation completed! Results are displayed in the measurement panel.',
+        step9: 'Tapping completed. Tapped density results are displayed below.',
+        completed: 'Simulation completed! All results are displayed in the measurement panel.',
 
         // UI elements
         step: 'Step',
